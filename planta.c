@@ -84,7 +84,7 @@ void* planta(void* ponteiroDados)
     BufferCircular*  filaEntradaPlanta  = dadosServidor->filaEntrada;//Fila de mensagens da rede para a planta.
     // ponteiro para a flag de inicio quando o start é recebido a flag aqui vai para 1.
     int*             flagIniciado       = &(dadosServidor->iniciado);
-git 
+  
     pthread_mutex_t* travaNivel         = &(dadosServidor->travaNivel);
     Nivel*           nivelAtual         = &(dadosServidor->nivel);
 
