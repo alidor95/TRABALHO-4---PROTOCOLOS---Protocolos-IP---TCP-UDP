@@ -1,0 +1,1 @@
+gcc -o servidorIP.o servidorIP.c

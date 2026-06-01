@@ -21,4 +21,11 @@ typedef struct {
     Angulo          anguloSaida;   
 } Comum;
 
+typedef struct
+{
+    int comando;
+    int seq;
+    int valor;
+} Mensagem;
+
 #endif
