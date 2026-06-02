@@ -1,13 +1,11 @@
-#define ABRIR_VALVULA    0
-#define FECHAR_VALVULA   1
-#define PEGAR_NIVEL      2
-#define TESTE            3
-#define DEFINIR_MAX      4
-#define INICIAR          5
 
-#define  BUFFSIZE       255
-
+#include <pthread.h>
 #include "struct_geral.h"
 
 
+
+#define  BUFFSIZE       255
+
+
 char* processa_mensagem(char* msg, char* resposta);
+int roda_servidorIP(int porta, Comum* ponteiro_memoria_compartilhada);

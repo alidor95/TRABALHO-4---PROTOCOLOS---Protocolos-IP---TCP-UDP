@@ -93,7 +93,7 @@ void* planta(void* ponteiroDados)
     Angulo*          anguloSaidaAtual   = &(dadosServidor->anguloSaida);
 
    
-    Mensagem*       mensagemRecebida;
+    Mensagem       mensagemRecebida;
     struct timespec marcadorInicio, marcadorAtual;
     long            tempoDecorridoCicloMs;
     Nivel           proximoNivel        = 0;
@@ -112,9 +112,9 @@ void* planta(void* ponteiroDados)
         obterTempoAtual(&marcadorAtual);
 
         // processa todas as mensagens da fila 
-        while ((mensagemRecebida = BCdesenfileirar(filaEntradaPlanta)) != NULL) {
-
-            if (mensagemRecebida->comando == INICIAR) {
+        while ((novas_mensagens(filaEntradaPlanta)) != 0) {
+            mensagemRecebida = le_mensagem(filaEntradaPlanta);
+            if (mensagemRecebida.comando == INICIAR) {
                 // reinicia toda a simulação 
                 obterTempoAtual(&marcadorInicio);
                 marcadorAtual       = marcadorInicio;
@@ -128,17 +128,17 @@ void* planta(void* ponteiroDados)
             }
 
             if (*flagIniciado) {
-                switch (mensagemRecebida->comando) {
+                switch (mensagemRecebida.comando) {
                 case ABRIR_VALVULA:
                     //acumula delta positivo — abre válvula 
-                    deltaPendente += mensagemRecebida->valor;
+                    deltaPendente += mensagemRecebida.valor;
                     break;
                 case FECHAR_VALVULA:
                     // acumula delta negativo — fecha válvula 
-                    deltaPendente -= mensagemRecebida->valor;
+                    deltaPendente -= mensagemRecebida.valor;
                     break;
                 case DEFINIR_MAX:
-                    configuracaoMaximo = mensagemRecebida->valor;
+                    configuracaoMaximo = mensagemRecebida.valor;
                     break;
                 default:
                     break;

@@ -3,15 +3,21 @@
 
 #include <pthread.h>
 
-//#include "rede.h"
+#include "buffer_circular.h"
 #include "planta.h"
 
+#define ABRIR_VALVULA    0
+#define FECHAR_VALVULA   1
+#define PEGAR_NIVEL      2
+#define TESTE            3
+#define DEFINIR_MAX      4
+#define INICIAR          5
 
 typedef struct {
     char* endereco; 
     char* porta; 
     int   iniciado;   
-    BufferCircular* filaSaida;   
+    BufferCircular* filaEntrada;   
 
     pthread_mutex_t travaNivel;   
     Nivel           nivel;        
@@ -21,11 +27,5 @@ typedef struct {
     Angulo          anguloSaida;   
 } Comum;
 
-typedef struct
-{
-    int comando;
-    int seq;
-    int valor;
-} Mensagem;
 
 #endif

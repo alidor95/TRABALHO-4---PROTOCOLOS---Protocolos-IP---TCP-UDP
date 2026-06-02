@@ -3,11 +3,11 @@
 /// @brief Adiciona uma mensagem nova no buffer circular
 /// @param buff Ponteiro para o buffer circular
 /// @param msg Mensagem a ser adicionada
-void adiciona_mensagem(buffer_circular* buff, Mensagem msg){
+void adiciona_mensagem(BufferCircular* buff, Mensagem msg){
     buff->lista_mensagens[buff->i_escrita] = msg;
 
     buff->i_escrita++;
-    if (buff->i_escrita == BUFFSIZE) {
+    if (buff->i_escrita == CIRCBUFFSIZE) {
         buff->i_escrita = 0;
     }
 
@@ -16,7 +16,7 @@ void adiciona_mensagem(buffer_circular* buff, Mensagem msg){
     }
 
     buff->i_leitura++;
-    if (buff->i_leitura == BUFFSIZE) {
+    if (buff->i_leitura == CIRCBUFFSIZE) {
         buff->i_leitura = 0;
     }
     
@@ -26,7 +26,7 @@ void adiciona_mensagem(buffer_circular* buff, Mensagem msg){
 /// @brief Pega uma mensagem da fila do buffer circular
 /// @param buff Ponteiro para o buffer circular
 /// @return  Retorna a mensagem selecionada
-Mensagem le_mensagem(buffer_circular* buff){
+Mensagem le_mensagem(BufferCircular* buff){
     // Se não tiver mensagem nova, retorna nulo
     if (buff->i_escrita == buff->i_leitura){
         return;
@@ -36,7 +36,7 @@ Mensagem le_mensagem(buffer_circular* buff){
     
     // Atualiza indice de leitura
     buff->i_leitura++;
-    if (buff->i_leitura == BUFFSIZE) {
+    if (buff->i_leitura == CIRCBUFFSIZE) {
         buff->i_leitura = 0;
     }
 
@@ -46,10 +46,10 @@ Mensagem le_mensagem(buffer_circular* buff){
 /// @brief Diz quantas mensagens novas existem no buffer circular
 /// @param buff ponteiro para o buffer circular
 /// @return retorna quantas mensagens novas existem
-int novas_mensagens(buffer_circular* buff){
+int novas_mensagens(BufferCircular* buff){
     int num_novas_mensagens = buff->i_escrita - buff->i_leitura;
     if (num_novas_mensagens < 0){
-        num_novas_mensagens = num_novas_mensagens + BUFFSIZE;
+        num_novas_mensagens = num_novas_mensagens + CIRCBUFFSIZE;
     }
     return num_novas_mensagens;
 }
@@ -59,13 +59,13 @@ int novas_mensagens(buffer_circular* buff){
 /// @param comando Comando a ser verificado
 /// @param seq Sequencia a ser verificada
 /// @return 
-int verifica_mensagem_repetida(buffer_circular* buff, int comando, int seq){
+int verifica_mensagem_repetida(BufferCircular* buff, int comando, int seq){
     int i = 0;
     int num_msgs = novas_mensagens(buff);
     int index = 0;
 
-    if (num_msgs == BUFFSIZE - 1){
-        for (i; i < BUFFSIZE - 1; i++){
+    if (num_msgs == CIRCBUFFSIZE - 1){
+        for (i; i < CIRCBUFFSIZE - 1; i++){
             if (buff->lista_mensagens[i].comando == comando && buff->lista_mensagens[i].seq == seq){
                 return MENSAGEM_REPETIDA;
             }
@@ -73,8 +73,8 @@ int verifica_mensagem_repetida(buffer_circular* buff, int comando, int seq){
     }else{
         index = buff->i_leitura; 
         for (i; i < num_msgs; i++){
-            if (index >= BUFFSIZE){
-                index = index - BUFFSIZE;
+            if (index >= CIRCBUFFSIZE){
+                index = index - CIRCBUFFSIZE;
             }
 
             if (buff->lista_mensagens[index].comando == comando && buff->lista_mensagens[index].seq == seq){
