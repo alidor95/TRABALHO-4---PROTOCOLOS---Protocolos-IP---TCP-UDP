@@ -1,19 +1,30 @@
-#include "struct_geral.h"
+#ifndef BUFFER_CIRC_H
+#define BUFFER_CIRC_H
 
-#define BUFFSIZE                 50
+#define CIRCBUFFSIZE                 50
 
 #define SEM_MENSAGEM_REPETIDA     0
 #define MENSAGEM_REPETIDA         1
 
+
+typedef struct
+{
+    int comando;
+    int seq;
+    int valor;
+} Mensagem;
+
 typedef struct 
 {
-    Mensagem lista_mensagens[BUFFSIZE];
+    Mensagem lista_mensagens[CIRCBUFFSIZE];
     int i_leitura;
     int i_escrita;    
-}buffer_circular;
+}BufferCircular;
 
 
-void adiciona_mensagem(buffer_circular* buff, Mensagem msg);
-Mensagem le_mensagem(buffer_circular* buff);
-int novas_mensagens(buffer_circular* buff);
-int verifica_mensagem_repetida(buffer_circular* buff, int comando, int seq);
+void adiciona_mensagem(BufferCircular* buff, Mensagem msg);
+Mensagem le_mensagem(BufferCircular* buff);
+int novas_mensagens(BufferCircular* buff);
+int verifica_mensagem_repetida(BufferCircular* buff, int comando, int seq);
+
+#endif

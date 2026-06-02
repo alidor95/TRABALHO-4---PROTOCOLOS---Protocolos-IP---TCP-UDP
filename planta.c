@@ -81,7 +81,7 @@ void* planta(void* ponteiroDados)
     //
     Comum* dadosServidor = (Comum*)ponteiroDados;
 
-    buffer_circular* filaEntradaPlanta = dadosServidor->filaEntrada;
+    BufferCircular* filaEntradaPlanta = dadosServidor->filaEntrada;
     pthread_mutex_t* travaFila         = &(dadosServidor->travaFilaEntrada);
     // ponteiro para a flag de inicio quando o start é recebido a flag aqui vai para 1.
     int*             flagIniciado       = &(dadosServidor->iniciado);
@@ -94,7 +94,6 @@ void* planta(void* ponteiroDados)
     Angulo*          anguloSaidaAtual   = &(dadosServidor->anguloSaida);
 
    
-
     struct timespec marcadorInicio, marcadorAtual;
     long            tempoDecorridoCicloMs;
     Nivel           proximoNivel        = 0;
@@ -112,20 +111,9 @@ void* planta(void* ponteiroDados)
                 tempoDecorridoMs(&marcadorAtual)) < INTERVALO_CICLO_MS);
         obterTempoAtual(&marcadorAtual);
 
-            int tem_mensagem = 0;
-            Mensagem mensagemRecebida;
-
-            pthread_mutex_lock(travaFila);
-        if (novas_mensagens(filaEntradaPlanta) > 0) {
-            mensagemRecebida = le_mensagem(filaEntradaPlanta);
-            tem_mensagem = 1;
-        }
-
-            pthread_mutex_unlock(travaFila);
-
         // processa todas as mensagens da fila 
-        if (tem_mensagem) {
-
+        while ((novas_mensagens(filaEntradaPlanta)) != 0) {
+            Mensagem mensagemRecebida = le_mensagem(filaEntradaPlanta);
             if (mensagemRecebida.comando == INICIAR) {
                 // reinicia toda a simulação 
                 obterTempoAtual(&marcadorInicio);

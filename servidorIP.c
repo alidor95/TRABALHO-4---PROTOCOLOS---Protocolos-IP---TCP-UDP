@@ -6,12 +6,17 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-#include "planta.h"
+// #include <planta.h>
+// #include "struct_geral.h"
 #include "servidorIP.h"
 
 #define BUFFSIZE 255
+
+
 void Die(char *mess) { perror(mess); exit(1); }
 
+Comum* memoria_compartilhada;
+BufferCircular mensagens_recebidas;
 
 /// @brief Processa a mensagem recebida por UDP e armazena ela no buffer
 /// @param msg Ponteiro para a mensagem recebida
@@ -29,18 +34,32 @@ char* processa_mensagem(char* buff, char* resposta){
         mensagem_recebida.comando = ABRIR_VALVULA;
         mensagem_recebida.seq = val1;
         mensagem_recebida.valor = val2;
+        if (verifica_mensagem_repetida(&mensagens_recebidas, mensagem_recebida.comando, mensagem_recebida.seq) != MENSAGEM_REPETIDA){
+            adiciona_mensagem(memoria_compartilhada->filaEntrada, mensagem_recebida);
+            adiciona_mensagem(&mensagens_recebidas, mensagem_recebida);
+        }
         sprintf(resposta, "Open#%d!", val1);
 
     }else if ( strcmp(comando, "CloseValve") == 0 && itens_encontrados == 3){
         mensagem_recebida.comando = FECHAR_VALVULA;
         mensagem_recebida.seq = val1;
         mensagem_recebida.valor = val2;
+        if (verifica_mensagem_repetida(&mensagens_recebidas, mensagem_recebida.comando, mensagem_recebida.seq) != MENSAGEM_REPETIDA){
+            adiciona_mensagem(memoria_compartilhada->filaEntrada, mensagem_recebida);
+            adiciona_mensagem(&mensagens_recebidas, mensagem_recebida);
+        }
         sprintf(resposta, "Close#%d!", val1);
 
     }else if ( strcmp(comando, "GetLevel") == 0 && itens_encontrados == 2){
-        int nivel = 10; // le_nivel(); 
+        pthread_mutex_lock(&memoria_compartilhada->travaNivel);
+        int nivel = memoria_compartilhada->nivel; 
+        pthread_mutex_unlock(&memoria_compartilhada->travaNivel);
         mensagem_recebida.comando = PEGAR_NIVEL;
         mensagem_recebida.seq = val1;
+        if (verifica_mensagem_repetida(&mensagens_recebidas, mensagem_recebida.comando, mensagem_recebida.seq) != MENSAGEM_REPETIDA){
+            adiciona_mensagem(memoria_compartilhada->filaEntrada, mensagem_recebida);
+            adiciona_mensagem(&mensagens_recebidas, mensagem_recebida);
+        }
         sprintf(resposta, "Level#%d#%d!", val1, nivel);
 
     }else if ( strcmp(comando, "CommTest") == 0 && itens_encontrados == 1){
@@ -50,10 +69,12 @@ char* processa_mensagem(char* buff, char* resposta){
     }else if ( strcmp(comando, "SetMax") == 0 && itens_encontrados == 2){
         mensagem_recebida.comando = DEFINIR_MAX;
         mensagem_recebida.valor = val1;
+        adiciona_mensagem(memoria_compartilhada->filaEntrada, mensagem_recebida);
         sprintf(resposta, "Max#%d!", val1);
             
     }else if ( strcmp(comando, "Start") == 0 && itens_encontrados == 1){
         mensagem_recebida.comando = INICIAR;
+        adiciona_mensagem(memoria_compartilhada->filaEntrada, mensagem_recebida);
         sprintf(resposta, "StartOK!");
 
     }else {
@@ -63,7 +84,7 @@ char* processa_mensagem(char* buff, char* resposta){
     return resposta;
 }
 
-int main(int argc, char *argv[]) {
+int roda_servidorIP(int porta, Comum* ponteiro_memoria_compartilhada) {
     int sock;
     struct sockaddr_in server;
     struct sockaddr_in client;
@@ -71,11 +92,8 @@ int main(int argc, char *argv[]) {
     char resposta[BUFFSIZE];
     unsigned int echolen, clientlen, serverlen;
     int received = 0;
-    
-    if (argc != 2) {
-        fprintf(stderr, "USAGE: %s <port>\n", argv[0]);
-        exit(1);
-    }
+
+    memoria_compartilhada = ponteiro_memoria_compartilhada;
 
      /* Create the UDP socket */
     if ((sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
@@ -85,7 +103,7 @@ int main(int argc, char *argv[]) {
     memset(&server, 0, sizeof(server));       /* Clear struct */
     server.sin_family = AF_INET;                  /* Internet/IP */
     server.sin_addr.s_addr = htonl(INADDR_ANY);   /* Any IP address */
-    server.sin_port = htons(atoi(argv[1]));       /* server port */
+    server.sin_port = htons(porta);       /* server port */
     
     /* Bind the socket */
     serverlen = sizeof(server);
@@ -93,6 +111,7 @@ int main(int argc, char *argv[]) {
         Die("Failed to bind server socket");
     }
 
+    
     /* Run until cancelled */
     while (1) {
         /* Receive a message from the client */

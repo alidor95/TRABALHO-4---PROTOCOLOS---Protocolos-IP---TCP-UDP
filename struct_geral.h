@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 
+#include "buffer_circular.h"
 #include "planta.h"
 
 #define ABRIR_VALVULA    0
@@ -16,12 +17,7 @@ typedef struct {
     char* endereco; 
     char* porta; 
     int   iniciado;   
-  
-       
-    void* filaEntrada;           
-    pthread_mutex_t travaFilaEntrada; 
-
-    void* filaSaida;
+    BufferCircular* filaEntrada;   
 
     pthread_mutex_t travaNivel;   
     Nivel           nivel;        
@@ -31,11 +27,5 @@ typedef struct {
     Angulo          anguloSaida;   
 } Comum;
 
-typedef struct
-{
-    int comando;
-    int seq;
-    int valor;
-} Mensagem;
 
 #endif
