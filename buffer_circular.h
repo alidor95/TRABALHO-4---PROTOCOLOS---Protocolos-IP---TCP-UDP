@@ -14,6 +14,6 @@ typedef struct
 
 
 void adiciona_mensagem(buffer_circular* buff, Mensagem msg);
-Mensagem adiciona_mensagem(buffer_circular* buff);
+Mensagem le_mensagem(buffer_circular* buff);
 int novas_mensagens(buffer_circular* buff);
 int verifica_mensagem_repetida(buffer_circular* buff, int comando, int seq);

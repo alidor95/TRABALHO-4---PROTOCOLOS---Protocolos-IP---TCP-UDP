@@ -6,7 +6,7 @@ para criar a rede e o grafico teria que olhar as funções aqui e traduzir
 #include <math.h>
 
 #include "planta.h"
-//#include "rede.h" -> falta criar 
+#include "buffer_circular.h"
 #include "struct_geral.h"
 //#include "grafico.h" -> falta criar
 
@@ -65,7 +65,7 @@ Angulo equacaoAnguloSaida(long t)
     if (t < 50000)
         return 100.0 - (t - 30000) / 250.0; // desce 100→20% em 20s 
     if (t < 70000)
-        return 200 + (t - 50000) / 1000.0; // sobe 20→40% em 20s 
+        return 20 + (t - 50000) / 1000.0; // sobe 20→40% em 20s 
     if (t < 100000)
         //oscila ao redor de 40% com amplitude de 20% e período de 30 segundos. Varia entre 20% e 60%.
         return 40.0 + 20.0 * sin((t - 70000) * 2.0 * VALOR_PI / 30000.0);
@@ -81,10 +81,11 @@ void* planta(void* ponteiroDados)
     //
     Comum* dadosServidor = (Comum*)ponteiroDados;
 
-    BufferCircular*  filaEntradaPlanta  = dadosServidor->filaEntrada;//Fila de mensagens da rede para a planta.
+    buffer_circular* filaEntradaPlanta = dadosServidor->filaEntrada;
+    pthread_mutex_t* travaFila         = &(dadosServidor->travaFilaEntrada);
     // ponteiro para a flag de inicio quando o start é recebido a flag aqui vai para 1.
     int*             flagIniciado       = &(dadosServidor->iniciado);
-  
+
     pthread_mutex_t* travaNivel         = &(dadosServidor->travaNivel);
     Nivel*           nivelAtual         = &(dadosServidor->nivel);
 
@@ -93,7 +94,7 @@ void* planta(void* ponteiroDados)
     Angulo*          anguloSaidaAtual   = &(dadosServidor->anguloSaida);
 
    
-    Mensagem*       mensagemRecebida;
+
     struct timespec marcadorInicio, marcadorAtual;
     long            tempoDecorridoCicloMs;
     Nivel           proximoNivel        = 0;
@@ -111,10 +112,21 @@ void* planta(void* ponteiroDados)
                 tempoDecorridoMs(&marcadorAtual)) < INTERVALO_CICLO_MS);
         obterTempoAtual(&marcadorAtual);
 
-        // processa todas as mensagens da fila 
-        while ((mensagemRecebida = BCdesenfileirar(filaEntradaPlanta)) != NULL) {
+            int tem_mensagem = 0;
+            Mensagem mensagemRecebida;
 
-            if (mensagemRecebida->comando == INICIAR) {
+            pthread_mutex_lock(travaFila);
+        if (novas_mensagens(filaEntradaPlanta) > 0) {
+            mensagemRecebida = le_mensagem(filaEntradaPlanta);
+            tem_mensagem = 1;
+        }
+
+            pthread_mutex_unlock(travaFila);
+
+        // processa todas as mensagens da fila 
+        if (tem_mensagem) {
+
+            if (mensagemRecebida.comando == INICIAR) {
                 // reinicia toda a simulação 
                 obterTempoAtual(&marcadorInicio);
                 marcadorAtual       = marcadorInicio;
@@ -128,17 +140,17 @@ void* planta(void* ponteiroDados)
             }
 
             if (*flagIniciado) {
-                switch (mensagemRecebida->comando) {
+                switch (mensagemRecebida.comando) {
                 case ABRIR_VALVULA:
                     //acumula delta positivo — abre válvula 
-                    deltaPendente += mensagemRecebida->valor;
+                    deltaPendente += mensagemRecebida.valor;
                     break;
                 case FECHAR_VALVULA:
                     // acumula delta negativo — fecha válvula 
-                    deltaPendente -= mensagemRecebida->valor;
+                    deltaPendente -= mensagemRecebida.valor;
                     break;
                 case DEFINIR_MAX:
-                    configuracaoMaximo = mensagemRecebida->valor;
+                    configuracaoMaximo = mensagemRecebida.valor;
                     break;
                 default:
                     break;
