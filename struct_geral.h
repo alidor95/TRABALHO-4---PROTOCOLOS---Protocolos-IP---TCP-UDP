@@ -13,6 +13,10 @@
 #define DEFINIR_MAX      4
 #define INICIAR          5
 
+typedef double Nivel;   
+typedef double Angulo;  
+
+
 typedef struct {
     char* endereco; 
     char* porta; 
@@ -21,6 +25,8 @@ typedef struct {
 
     pthread_mutex_t travaNivel;   
     Nivel           nivel;        
+
+    pthread_mutex_t travaFilaEntrada;
 
     pthread_mutex_t travaAngulo; 
     Angulo          anguloEntrada; 

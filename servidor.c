@@ -1,6 +1,7 @@
 #include "servidor.h"
+#include <stdio.h>
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {    
     if (argc != 2) {
         fprintf(stderr, "USAGE: %s <port>\n", argv[0]);
         exit(1);
@@ -11,10 +12,13 @@ int main(int argc, char *argv[]) {
     BufferCircular lista_comandos;
     Comum memoria_compartilhada;
     
+    lista_comandos.i_escrita = 0;
+    lista_comandos.i_leitura = 0;
     memoria_compartilhada.filaEntrada = &lista_comandos;
 
     pthread_mutex_init(&memoria_compartilhada.travaAngulo, NULL);
     pthread_mutex_init(&memoria_compartilhada.travaNivel, NULL);
+    pthread_mutex_init(&memoria_compartilhada.travaFilaEntrada, NULL);
 
     pthread_t thread_planta;
     int ret1;

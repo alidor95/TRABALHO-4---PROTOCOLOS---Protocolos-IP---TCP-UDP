@@ -1,6 +1,13 @@
 #ifndef PLANTA_H
 #define PLANTA_H
 
+// #define _POSIX_C_SOURCE 199309L // Necessário para habilitar o clock_gettime em alguns sistemas
+#include <time.h>
+#include <stdio.h>
+#include <math.h>
+
+#include "buffer_circular.h"
+#include "struct_geral.h"
 
 #define ANGULO_ENTRADA_INICIO  50.0   // angulo inicial da valvula de entrada
 #define NIVEL_INICIO           0.4    //nivel inicial é a porcetagem de 40%

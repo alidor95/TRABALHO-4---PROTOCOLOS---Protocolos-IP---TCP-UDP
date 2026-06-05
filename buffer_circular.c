@@ -28,9 +28,9 @@ void adiciona_mensagem(BufferCircular* buff, Mensagem msg){
 /// @return  Retorna a mensagem selecionada
 Mensagem le_mensagem(BufferCircular* buff){
     // Se não tiver mensagem nova, retorna nulo
-    if (buff->i_escrita == buff->i_leitura){
-        return;
-    }
+    // if (buff->i_escrita == buff->i_leitura){
+        // return ;
+    // }
 
     Mensagem msg = buff->lista_mensagens[buff->i_leitura];
     
@@ -65,7 +65,7 @@ int verifica_mensagem_repetida(BufferCircular* buff, int comando, int seq){
     int index = 0;
 
     if (num_msgs == CIRCBUFFSIZE - 1){
-        for (i; i < CIRCBUFFSIZE - 1; i++){
+        for (i; i <= CIRCBUFFSIZE - 1; i++){
             if (buff->lista_mensagens[i].comando == comando && buff->lista_mensagens[i].seq == seq){
                 return MENSAGEM_REPETIDA;
             }
@@ -80,7 +80,6 @@ int verifica_mensagem_repetida(BufferCircular* buff, int comando, int seq){
             if (buff->lista_mensagens[index].comando == comando && buff->lista_mensagens[index].seq == seq){
                 return MENSAGEM_REPETIDA;
             }
-
             index++;
         }
     }

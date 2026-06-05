@@ -2,12 +2,8 @@
 para criar a rede e o grafico teria que olhar as funções aqui e traduzir
 */
 
-#include <stdio.h>
-#include <math.h>
-
 #include "planta.h"
-#include "buffer_circular.h"
-#include "struct_geral.h"
+
 //#include "grafico.h" -> falta criar
 
 #define INTERVALO_CICLO_MS  10        // periodo da simulação 10 milissegundos definido no enunciado       
@@ -75,6 +71,38 @@ Angulo equacaoAnguloSaida(long t)
     return 100.0;
 }
 
+long tempoDecorridoMs(const struct timespec* marcadorInicio) {
+    // 1. Proteção contra ponteiro nulo (Evita Segmentation Fault)
+    if (marcadorInicio == NULL) {
+        return 0; 
+    }
+
+    struct timespec tempoAtual;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &tempoAtual);    
+
+    // 2. Calcula a diferença bruta de segundos e nanossegundos
+    long segundos = tempoAtual.tv_sec - marcadorInicio->tv_sec;
+    long nanossegundos = tempoAtual.tv_nsec - marcadorInicio->tv_nsec;
+
+    // 3. Ajusta se os nanossegundos atuais forem menores que o do início (virada de segundo)
+    if (nanossegundos < 0) {
+        segundos -= 1;
+        nanossegundos += 1000000000; // Soma 1 bilhão de ns (1 segundo)
+    }
+
+    // 4. Converte tudo para Milissegundos (ms)
+    // Segundos multiplicam por 1.000
+    // Nanossegundos dividem por 1.000.000
+    long diff_ms = (segundos * 1000) + (nanossegundos / 1000000);
+
+    return diff_ms;
+}
+
+long calcularDeltaMs(struct timespec* marcadorInicio, struct timespec* marcadorAtual){
+
+    return (long) (marcadorAtual->tv_nsec - marcadorInicio->tv_nsec) / 1000000;
+}
+
 // principal da simulação
 void* planta(void* ponteiroDados)
 {
@@ -103,20 +131,25 @@ void* planta(void* ponteiroDados)
     double          configuracaoMaximo  = MAXIMO_INICIO;
     double          fluxoEntrada, fluxoSaida;
 
-    obterTempoAtual(&marcadorAtual);
+    // obterTempoAtual(&marcadorAtual);
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
 
     for (;;) {
         
         while ((tempoDecorridoCicloMs =
                 tempoDecorridoMs(&marcadorAtual)) < INTERVALO_CICLO_MS);
-        obterTempoAtual(&marcadorAtual);
+        // obterTempoAtual(&marcadorAtual);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
 
         // processa todas as mensagens da fila 
         while ((novas_mensagens(filaEntradaPlanta)) != 0) {
+            printf("nova msg - %ld\n", tempoDecorridoCicloMs);
             Mensagem mensagemRecebida = le_mensagem(filaEntradaPlanta);
             if (mensagemRecebida.comando == INICIAR) {
                 // reinicia toda a simulação 
-                obterTempoAtual(&marcadorInicio);
+                // obterTempoAtual(&marcadorInicio);
+                clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
                 marcadorAtual       = marcadorInicio;
                 anguloEntradaCalc   = ANGULO_ENTRADA_INICIO;
                 proximoNivel        = NIVEL_INICIO;
@@ -147,8 +180,9 @@ void* planta(void* ponteiroDados)
         }
 
         
-        if (!(*flagIniciado))
+        if (!(*flagIniciado)){
             continue;
+        }
 
        
         equacaoAnguloEntrada(tempoDecorridoCicloMs,
@@ -187,5 +221,6 @@ void* planta(void* ponteiroDados)
         *anguloSaidaAtual   = anguloSaidaCalc;
         pthread_mutex_unlock(travaAngulo);
     }
+    printf("retornando \n");
     return NULL;
 }
