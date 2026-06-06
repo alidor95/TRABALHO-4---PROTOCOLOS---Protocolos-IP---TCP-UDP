@@ -71,37 +71,37 @@ Angulo equacaoAnguloSaida(long t)
     return 100.0;
 }
 
-long tempoDecorridoMs(const struct timespec* marcadorInicio) {
-    // 1. Proteção contra ponteiro nulo (Evita Segmentation Fault)
-    if (marcadorInicio == NULL) {
-        return 0; 
-    }
+// long tempoDecorridoMs(const struct timespec* marcadorInicio) {
+//     // 1. Proteção contra ponteiro nulo (Evita Segmentation Fault)
+//     if (marcadorInicio == NULL) {
+//         return 0; 
+//     }
 
-    struct timespec tempoAtual;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &tempoAtual);    
+//     struct timespec tempoAtual;
+//     clock_gettime(CLOCK_MONOTONIC_RAW, &tempoAtual);    
 
-    // 2. Calcula a diferença bruta de segundos e nanossegundos
-    long segundos = tempoAtual.tv_sec - marcadorInicio->tv_sec;
-    long nanossegundos = tempoAtual.tv_nsec - marcadorInicio->tv_nsec;
+//     // 2. Calcula a diferença bruta de segundos e nanossegundos
+//     long segundos = tempoAtual.tv_sec - marcadorInicio->tv_sec;
+//     long nanossegundos = tempoAtual.tv_nsec - marcadorInicio->tv_nsec;
 
-    // 3. Ajusta se os nanossegundos atuais forem menores que o do início (virada de segundo)
-    if (nanossegundos < 0) {
-        segundos -= 1;
-        nanossegundos += 1000000000; // Soma 1 bilhão de ns (1 segundo)
-    }
+//     // 3. Ajusta se os nanossegundos atuais forem menores que o do início (virada de segundo)
+//     if (nanossegundos < 0) {
+//         segundos -= 1;
+//         nanossegundos += 1000000000; // Soma 1 bilhão de ns (1 segundo)
+//     }
 
-    // 4. Converte tudo para Milissegundos (ms)
-    // Segundos multiplicam por 1.000
-    // Nanossegundos dividem por 1.000.000
-    long diff_ms = (segundos * 1000) + (nanossegundos / 1000000);
+//     // 4. Converte tudo para Milissegundos (ms)
+//     // Segundos multiplicam por 1.000
+//     // Nanossegundos dividem por 1.000.000
+//     long diff_ms = (segundos * 1000) + (nanossegundos / 1000000);
 
-    return diff_ms;
-}
+//     return diff_ms;
+// }
 
-long calcularDeltaMs(struct timespec* marcadorInicio, struct timespec* marcadorAtual){
+// long calcularDeltaMs(struct timespec* marcadorInicio, struct timespec* marcadorAtual){
 
-    return (long) (marcadorAtual->tv_nsec - marcadorInicio->tv_nsec) / 1000000;
-}
+//     return (long) (marcadorAtual->tv_nsec - marcadorInicio->tv_nsec) / 1000000;
+// }
 
 // principal da simulação
 void* planta(void* ponteiroDados)
@@ -121,8 +121,8 @@ void* planta(void* ponteiroDados)
     Angulo*          anguloEntradaAtual = &(dadosServidor->anguloEntrada);
     Angulo*          anguloSaidaAtual   = &(dadosServidor->anguloSaida);
 
-   
-    struct timespec marcadorInicio, marcadorAtual;
+    Cronometro cron;
+    // struct timespec marcadorInicio, marcadorAtual;
     long            tempoDecorridoCicloMs;
     Nivel           proximoNivel        = 0;
     Angulo          anguloEntradaCalc   = 0;
@@ -133,14 +133,16 @@ void* planta(void* ponteiroDados)
 
     // obterTempoAtual(&marcadorAtual);
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
+    // clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
+    obterTempoAtual(&cron);
 
     for (;;) {
         
         while ((tempoDecorridoCicloMs =
-                tempoDecorridoMs(&marcadorAtual)) < INTERVALO_CICLO_MS);
+                tempoDecorridoMs(&cron)) < INTERVALO_CICLO_MS);
         // obterTempoAtual(&marcadorAtual);
-        clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
+        obterTempoAtual(&cron);
+        // clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
 
         // processa todas as mensagens da fila 
         while ((novas_mensagens(filaEntradaPlanta)) != 0) {
@@ -149,8 +151,9 @@ void* planta(void* ponteiroDados)
             if (mensagemRecebida.comando == INICIAR) {
                 // reinicia toda a simulação 
                 // obterTempoAtual(&marcadorInicio);
-                clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
-                marcadorAtual       = marcadorInicio;
+                // clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
+                obterTempoAtual(&cron);
+                cron.marcadorAtual       = cron.marcadorInicio;
                 anguloEntradaCalc   = ANGULO_ENTRADA_INICIO;
                 proximoNivel        = NIVEL_INICIO;
                 deltaPendente       = 0.0;
@@ -194,8 +197,7 @@ void* planta(void* ponteiroDados)
         if (anguloEntradaCalc <   0.0) anguloEntradaCalc =   0.0;
 
         
-        anguloSaidaCalc = equacaoAnguloSaida(
-            calcularDeltaMs(&marcadorInicio, &marcadorAtual));
+        anguloSaidaCalc = equacaoAnguloSaida(calcularDeltaMs(&cron));
 
         // equações físicas do tanque 
         fluxoEntrada = sin(VALOR_PI / 2.0 * anguloEntradaCalc / 100.0);

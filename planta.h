@@ -8,6 +8,7 @@
 
 #include "buffer_circular.h"
 #include "struct_geral.h"
+#include "cronometro.h"
 
 #define ANGULO_ENTRADA_INICIO  50.0   // angulo inicial da valvula de entrada
 #define NIVEL_INICIO           0.4    //nivel inicial é a porcetagem de 40%
