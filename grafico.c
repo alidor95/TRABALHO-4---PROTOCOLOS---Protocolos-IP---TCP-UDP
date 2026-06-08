@@ -186,23 +186,7 @@ void* grafico(void* ponteiroDados){
 
         t += tempoDecorridoCicloMs;
 
-        // printf("t        - %f\nlevel    - %f\ninangle  - %f\noutangle - %f\n\n", t, level, inangle, outangle);
+        printf("t        - %f\nlevel    - %f\ninangle  - %f\noutangle - %f\n\n", t, level, inangle, outangle);
     }
 }
 
-
-// main para testar no servidoor do professor
-/*int main( int argc, const char* argv[] ) {
-  Tdataholder *data;
-  double t=0;
-
-  data = datainit(640,480,55,110,45,0,0);
-
-  for (t=0;t<50;t+=0.1) {
-    datadraw(data,t,(double)(50+20*cos(t/5)),(double)(70+10*sin(t/10)),(double)(20+5*cos(t/2.5)));
-  }
-
-  while(1) {
-    quitevent();
-  }
-}*/

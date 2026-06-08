@@ -12,5 +12,6 @@ typedef struct
 void obterTempoAtual(Cronometro* cron);
 long tempoDecorridoMs(Cronometro* cron);
 long calcularDeltaMs(Cronometro* cron);
+void iniciar_cronometro(Cronometro* cron);
 
 #endif

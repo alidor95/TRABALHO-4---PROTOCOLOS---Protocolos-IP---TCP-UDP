@@ -46,6 +46,7 @@ void equacaoAnguloEntrada(long tempoDecorridoMs,
     }
    
 }
+
 /*
 Calcula o ângulo da válvula de saída em função do tempo total de simulação
 recebe t desde o start é predinida no enunciado . 
@@ -71,38 +72,6 @@ Angulo equacaoAnguloSaida(long t)
     return 100.0;
 }
 
-// long tempoDecorridoMs(const struct timespec* marcadorInicio) {
-//     // 1. Proteção contra ponteiro nulo (Evita Segmentation Fault)
-//     if (marcadorInicio == NULL) {
-//         return 0; 
-//     }
-
-//     struct timespec tempoAtual;
-//     clock_gettime(CLOCK_MONOTONIC_RAW, &tempoAtual);    
-
-//     // 2. Calcula a diferença bruta de segundos e nanossegundos
-//     long segundos = tempoAtual.tv_sec - marcadorInicio->tv_sec;
-//     long nanossegundos = tempoAtual.tv_nsec - marcadorInicio->tv_nsec;
-
-//     // 3. Ajusta se os nanossegundos atuais forem menores que o do início (virada de segundo)
-//     if (nanossegundos < 0) {
-//         segundos -= 1;
-//         nanossegundos += 1000000000; // Soma 1 bilhão de ns (1 segundo)
-//     }
-
-//     // 4. Converte tudo para Milissegundos (ms)
-//     // Segundos multiplicam por 1.000
-//     // Nanossegundos dividem por 1.000.000
-//     long diff_ms = (segundos * 1000) + (nanossegundos / 1000000);
-
-//     return diff_ms;
-// }
-
-// long calcularDeltaMs(struct timespec* marcadorInicio, struct timespec* marcadorAtual){
-
-//     return (long) (marcadorAtual->tv_nsec - marcadorInicio->tv_nsec) / 1000000;
-// }
-
 // principal da simulação
 void* planta(void* ponteiroDados)
 {
@@ -122,6 +91,11 @@ void* planta(void* ponteiroDados)
     Angulo*          anguloSaidaAtual   = &(dadosServidor->anguloSaida);
 
     Cronometro cron;
+    cron.marcadorAtual.tv_nsec = 0;
+    cron.marcadorAtual.tv_sec = 0;
+    cron.marcadorInicio.tv_nsec = 0;
+    cron.marcadorInicio.tv_sec = 0;
+
     // struct timespec marcadorInicio, marcadorAtual;
     long            tempoDecorridoCicloMs;
     Nivel           proximoNivel        = 0;
@@ -134,15 +108,15 @@ void* planta(void* ponteiroDados)
     // obterTempoAtual(&marcadorAtual);
 
     // clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
-    obterTempoAtual(&cron);
+    // obterTempoAtual(&cron);
+    iniciar_cronometro(&cron);
+
+    long deltaMS;
 
     for (;;) {
         
-        while ((tempoDecorridoCicloMs =
-                tempoDecorridoMs(&cron)) < INTERVALO_CICLO_MS);
-        // obterTempoAtual(&marcadorAtual);
+        while ((tempoDecorridoCicloMs = tempoDecorridoMs(&cron)) < INTERVALO_CICLO_MS);
         obterTempoAtual(&cron);
-        // clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
 
         // processa todas as mensagens da fila 
         while ((novas_mensagens(filaEntradaPlanta)) != 0) {
@@ -151,8 +125,9 @@ void* planta(void* ponteiroDados)
             if (mensagemRecebida.comando == INICIAR) {
                 // reinicia toda a simulação 
                 // obterTempoAtual(&marcadorInicio);
+                iniciar_cronometro(&cron);
                 // clock_gettime(CLOCK_MONOTONIC_RAW, &marcadorAtual);
-                obterTempoAtual(&cron);
+                // obterTempoAtual(&cron);
                 cron.marcadorAtual       = cron.marcadorInicio;
                 anguloEntradaCalc   = ANGULO_ENTRADA_INICIO;
                 proximoNivel        = NIVEL_INICIO;
@@ -167,11 +142,12 @@ void* planta(void* ponteiroDados)
                 switch (mensagemRecebida.comando) {
                 case ABRIR_VALVULA:
                     //acumula delta positivo — abre válvula 
-                    printf("abrir - %d", mensagemRecebida.valor);
+                    printf("abrir - %d\n", mensagemRecebida.valor);
                     deltaPendente += mensagemRecebida.valor;
                     break;
                 case FECHAR_VALVULA:
                     // acumula delta negativo — fecha válvula 
+                    printf("fechar - %d\n", mensagemRecebida.valor);
                     deltaPendente -= mensagemRecebida.valor;
                     break;
                 case DEFINIR_MAX:
@@ -198,7 +174,9 @@ void* planta(void* ponteiroDados)
         if (anguloEntradaCalc <   0.0) anguloEntradaCalc =   0.0;
 
         
-        anguloSaidaCalc = equacaoAnguloSaida(calcularDeltaMs(&cron));
+        deltaMS = calcularDeltaMs(&cron);
+        // printf("deltaMS - %ld\n", deltaMS);
+        anguloSaidaCalc = equacaoAnguloSaida(deltaMS);
 
         // equações físicas do tanque 
         fluxoEntrada = sin(VALOR_PI / 2.0 * anguloEntradaCalc / 100.0);

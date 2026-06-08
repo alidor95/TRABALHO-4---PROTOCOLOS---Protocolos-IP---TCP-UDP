@@ -35,7 +35,6 @@ char* processa_mensagem(char* buff, char* resposta){
         mensagem_recebida.seq = val1;
         mensagem_recebida.valor = val2;
         if (verifica_mensagem_repetida(&mensagens_recebidas, mensagem_recebida.comando, mensagem_recebida.seq) == SEM_MENSAGEM_REPETIDA){
-            printf("sem msg repetida\n");
             adiciona_mensagem(memoria_compartilhada->filaEntrada, mensagem_recebida);
             adiciona_mensagem(&mensagens_recebidas, mensagem_recebida);
         }

@@ -1,5 +1,10 @@
 #include "cronometro.h"
 
+void iniciar_cronometro(Cronometro* cron){
+    clock_gettime(CLOCK_MONOTONIC_RAW, &cron->marcadorAtual);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &cron->marcadorInicio);
+}
+
 void obterTempoAtual(Cronometro* cron){
     clock_gettime(CLOCK_MONOTONIC_RAW, &cron->marcadorAtual);
 }
