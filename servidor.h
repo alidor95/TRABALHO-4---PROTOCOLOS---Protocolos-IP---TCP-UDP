@@ -3,6 +3,7 @@
 
 #include "servidorIP.h"
 #include "planta.h"
+#include "grafico.h"
 #include "struct_geral.h"
 #include <pthread.h>
 #include <stdio.h>

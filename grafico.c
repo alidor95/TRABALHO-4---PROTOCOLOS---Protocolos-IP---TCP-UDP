@@ -3,10 +3,7 @@ Codigo fornecido pelo professor n aqui sera feito as correções para fazer o gr
 primeiro passo é retirar o int
 */
 
-
-#include <stdio.h>
-#include <SDL/SDL.h>
-#include <math.h>
+#include "grafico.h"
 
 #define SCREEN_W 640 //tamanho da janela que sera criada
 #define SCREEN_H 640
@@ -15,38 +12,7 @@ primeiro passo é retirar o int
 //typedef Uint8 PixelType;
 //#define BPP 16
 //typedef Uint16 PixelType;
-#define BPP 32
-typedef Uint32 PixelType;
 
-
-
-typedef struct canvas {
-  SDL_Surface *canvas;
-  int Height; // canvas height
-  int Width;  // canvas width
-  int Xoffset; // X off set, in canvas pixels
-  int Yoffset; // Y off set, in canvas pixels
-  int Xext; // X extra width
-  int Yext; // Y extra height
-  double Xmax;
-  double Ymax;
-  double Xstep; // half a distance between X pixels in 'Xmax' scale
-
-  PixelType *zpixel;
-
-} Tcanvas;
-
-typedef struct dataholder {
-  Tcanvas *canvas;
-  double   Tcurrent;
-  double   Lcurrent;
-  PixelType Lcolor;
-  double   INcurrent;
-  PixelType INcolor;
-  double   OUTcurrent;
-  PixelType OUTcolor;
-
-} Tdataholder;
 
 inline void c_pixeldraw(Tcanvas *canvas, int x, int y, PixelType color)
 {
@@ -122,8 +88,6 @@ Tcanvas *c_open(int Width, int Height, double Xmax, double Ymax)
   return canvas;
 }
 
-
-
 Tdataholder *datainit(int Width, int Height, double Xmax, double Ymax, double Lcurrent, double INcurrent, double OUTcurrent) {
   Tdataholder *data = malloc(sizeof(Tdataholder));
 
@@ -131,11 +95,11 @@ Tdataholder *datainit(int Width, int Height, double Xmax, double Ymax, double Lc
   data->canvas=c_open(Width, Height, Xmax, Ymax);
   data->Tcurrent=0;
   data->Lcurrent=Lcurrent;
-  data->Lcolor= (PixelType) SDL_MapRGB(data->canvas->canvas->format,  255, 180,  0);
+  data->Lcolor= (PixelType) SDL_MapRGB(data->canvas->canvas->format,  255, 0,  0);
   data->INcurrent=INcurrent;
-  data->INcolor=(PixelType) SDL_MapRGB(data->canvas->canvas->format,  180, 255,  0);
+  data->INcolor=(PixelType) SDL_MapRGB(data->canvas->canvas->format,  0, 255,  0);
   data->OUTcurrent=OUTcurrent;
-  data->OUTcolor=(PixelType) SDL_MapRGB(data->canvas->canvas->format,  0, 180,  255);
+  data->OUTcolor=(PixelType) SDL_MapRGB(data->canvas->canvas->format,  0, 0,  255);
 
 
   return data;
@@ -146,8 +110,6 @@ void setdatacolors(Tdataholder *data, PixelType Lcolor, PixelType INcolor, Pixel
   data->INcolor=INcolor;
   data->OUTcolor=OUTcolor;
 }
-
-
 
 
 void datadraw(Tdataholder *data, double time, double level, double inangle, double outangle) {
@@ -176,16 +138,57 @@ void quitevent() {
 
 }
 
-//
-//
-//
-//
-//
-//
-//
+void tryquit() {
+  SDL_Event event;
 
+  if(SDL_PollEvent(&event)) { 
+    if(event.type == SDL_QUIT) { 
+      // close files, etc...
 
+      SDL_Quit();
+      exit(1); // this will terminate all threads !
+    }
+  }
 
+}
+
+void* grafico(void* ponteiroDados){
+    Comum* dadosServidor = (Comum*)ponteiroDados;
+
+    Cronometro cron;
+
+    Tdataholder *data;
+    data = datainit(640,480,100,110,0,0,0);
+
+    long tempoDecorridoCicloMs;
+    double t;
+    double level;
+    double inangle;
+    double outangle;
+
+    obterTempoAtual(&cron);
+
+    t = 0;
+
+    for (;;){
+        while ((tempoDecorridoCicloMs = tempoDecorridoMs(&cron)) < INTERVALO_CICLO_MS);
+
+        obterTempoAtual(&cron);
+
+        pthread_mutex_lock(&dadosServidor->travaFilaEntrada);
+        level    = dadosServidor->nivel;
+        inangle  = dadosServidor->anguloEntrada;
+        outangle = dadosServidor->anguloSaida;
+        pthread_mutex_unlock(&dadosServidor->travaFilaEntrada);
+
+        datadraw(data, t/1000, level, inangle, outangle);
+        tryquit();
+
+        t += tempoDecorridoCicloMs;
+
+        // printf("t        - %f\nlevel    - %f\ninangle  - %f\noutangle - %f\n\n", t, level, inangle, outangle);
+    }
+}
 
 
 // main para testar no servidoor do professor

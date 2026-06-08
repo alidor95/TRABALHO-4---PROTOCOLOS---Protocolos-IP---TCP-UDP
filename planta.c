@@ -167,6 +167,7 @@ void* planta(void* ponteiroDados)
                 switch (mensagemRecebida.comando) {
                 case ABRIR_VALVULA:
                     //acumula delta positivo — abre válvula 
+                    printf("abrir - %d", mensagemRecebida.valor);
                     deltaPendente += mensagemRecebida.valor;
                     break;
                 case FECHAR_VALVULA:

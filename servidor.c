@@ -21,11 +21,19 @@ int main(int argc, char *argv[]) {
     pthread_mutex_init(&memoria_compartilhada.travaFilaEntrada, NULL);
 
     pthread_t thread_planta;
-    int ret1;
+    pthread_t thread_grafico;
+
+    int ret1, ret2;
 
     ret1 = pthread_create( &thread_planta, NULL, planta, (void*) &memoria_compartilhada );
     if(ret1){
 	    fprintf(stderr,"Error - pthread_create() return code: %d\n",ret1);
+	    exit(EXIT_FAILURE);
+	}
+
+    ret2 = pthread_create( &thread_grafico, NULL, grafico, (void*) &memoria_compartilhada );
+    if(ret2){
+	    fprintf(stderr,"Error - pthread_create() return code: %d\n",ret2);
 	    exit(EXIT_FAILURE);
 	}
 
