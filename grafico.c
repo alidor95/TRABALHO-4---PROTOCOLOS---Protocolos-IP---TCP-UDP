@@ -14,12 +14,12 @@ primeiro passo é retirar o int
 //typedef Uint16 PixelType;
 
 
-inline void c_pixeldraw(Tcanvas *canvas, int x, int y, PixelType color)
+ void c_pixeldraw(Tcanvas *canvas, int x, int y, PixelType color)
 {
   *( ((PixelType*)canvas->canvas->pixels) + ((-y+canvas->Yoffset) * canvas->canvas->w + x+ canvas->Xoffset)) = color;
 }
 
-inline void c_hlinedraw(Tcanvas *canvas, int xstep, int y, PixelType color)
+ void c_hlinedraw(Tcanvas *canvas, int xstep, int y, PixelType color)
 {
   int offset =  (-y+canvas->Yoffset) * canvas->canvas->w;
   int x;
@@ -28,8 +28,7 @@ inline void c_hlinedraw(Tcanvas *canvas, int xstep, int y, PixelType color)
         *( ((PixelType*)canvas->canvas->pixels) + (offset + x)) = color;
   }
 }
-
-inline void c_vlinedraw(Tcanvas *canvas, int x, int ystep, PixelType color)
+ void c_vlinedraw(Tcanvas *canvas, int x, int ystep, PixelType color)
 {
   int offset = x+canvas->Xoffset;
   int y;
@@ -41,7 +40,7 @@ inline void c_vlinedraw(Tcanvas *canvas, int x, int ystep, PixelType color)
 }
 
 
-inline void c_linedraw(Tcanvas *canvas, double x0, double y0, double x1, double y1, PixelType color) {
+ void c_linedraw(Tcanvas *canvas, double x0, double y0, double x1, double y1, PixelType color) {
   double x;
 
   for (x=x0; x<=x1; x+=canvas->Xstep) {
@@ -115,7 +114,9 @@ void setdatacolors(Tdataholder *data, PixelType Lcolor, PixelType INcolor, Pixel
 void datadraw(Tdataholder *data, double time, double level, double inangle, double outangle) {
   c_linedraw(data->canvas,data->Tcurrent,data->Lcurrent,time,level,data->Lcolor);
   c_linedraw(data->canvas,data->Tcurrent,data->INcurrent,time,inangle,data->INcolor);
+  #ifndef CLIENTE
   c_linedraw(data->canvas,data->Tcurrent,data->OUTcurrent,time,outangle,data->OUTcolor);
+#endif
   data->Tcurrent = time;
   data->Lcurrent = level;
   data->INcurrent = inangle;
@@ -137,7 +138,7 @@ void quitevent() {
   }
 
 }
-
+/*
 void tryquit() {
   SDL_Event event;
 
@@ -150,43 +151,52 @@ void tryquit() {
     }
   }
 
-}
-
+}*/
 void* grafico(void* ponteiroDados){
-    Comum* dadosServidor = (Comum*)ponteiroDados;
+    Comum* dados = (Comum*)ponteiroDados;
+    Tdataholder *data = datainit(640,480,100,110,0,0,0);
+    double valorAnguloEntrada, valorAnguloSaida, valorNivelAtual;
 
-    Cronometro cron;
+    while (!dados->iniciado) { quitevent(); SDL_Delay(100); }
 
-    Tdataholder *data;
-    data = datainit(640,480,100,110,0,0,0);
+    Cronometro cron_tela;
+    iniciar_cronometro(&cron_tela); 
 
-    long tempoDecorridoCicloMs;
-    double t;
-    double level;
-    double inangle;
-    double outangle;
+    while (1) {
+        obterTempoAtual(&cron_tela);
+        double segundos = calcularDeltaMs(&cron_tela) / 1000.0;
 
-    obterTempoAtual(&cron);
+        /* CORREÇÃO: Limpa a tela exatamente nos 100s e pinta o fundo de branco */
+        if (segundos >= 100.0) {
+            iniciar_cronometro(&cron_tela);
+            segundos = 0.0;
+            data->Tcurrent = 0.0; /* Impede que uma linha cruze a tela inteira */
 
-    t = 0;
+            
+            SDL_FillRect(data->canvas->canvas, NULL, SDL_MapRGB(data->canvas->canvas->format, 0, 0, 0));
+            
+            /* Redesenha a grade do professor */
+            int x, y;
+            for (y=10; y < data->canvas->Ymax; y+=10) 
+                c_hlinedraw(data->canvas, 3, y * data->canvas->Height / data->canvas->Ymax, (PixelType) SDL_MapRGB(data->canvas->canvas->format, 220, 220, 220));
+            c_vlinedraw(data->canvas, 0, 1, (PixelType) SDL_MapRGB(data->canvas->canvas->format, 255, 255, 255));
+            for (x=10; x < data->canvas->Xmax; x+=10) 
+                c_vlinedraw(data->canvas, x * data->canvas->Width / data->canvas->Xmax, 3, (PixelType) SDL_MapRGB(data->canvas->canvas->format, 220, 220, 220));
+        }
 
-    for (;;){
-        while ((tempoDecorridoCicloMs = tempoDecorridoMs(&cron)) < INTERVALO_CICLO_MS);
+        pthread_mutex_lock(&dados->travaNivel);
+        valorNivelAtual = dados->nivel; 
+        pthread_mutex_unlock(&dados->travaNivel);
 
-        obterTempoAtual(&cron);
+        pthread_mutex_lock(&dados->travaAngulo);
+        valorAnguloEntrada = dados->anguloEntrada;
+        valorAnguloSaida   = dados->anguloSaida;
+        pthread_mutex_unlock(&dados->travaAngulo);
 
-        pthread_mutex_lock(&dadosServidor->travaFilaEntrada);
-        level    = dadosServidor->nivel;
-        inangle  = dadosServidor->anguloEntrada;
-        outangle = dadosServidor->anguloSaida;
-        pthread_mutex_unlock(&dadosServidor->travaFilaEntrada);
+        datadraw(data, segundos, valorNivelAtual, valorAnguloEntrada, valorAnguloSaida);
 
-        datadraw(data, t/1000, level, inangle, outangle);
-        tryquit();
-
-        t += tempoDecorridoCicloMs;
-
-        printf("t        - %f\nlevel    - %f\ninangle  - %f\noutangle - %f\n\n", t, level, inangle, outangle);
+        quitevent(); 
+        SDL_Delay(100); 
     }
+    return NULL;
 }
-

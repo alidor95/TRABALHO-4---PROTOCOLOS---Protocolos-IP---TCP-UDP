@@ -193,7 +193,7 @@ void* planta(void* ponteiroDados)
 
         //publica nível com mutex 
         pthread_mutex_lock(travaNivel);
-        *nivelAtual = proximoNivel;
+        *nivelAtual = proximoNivel*100;
         pthread_mutex_unlock(travaNivel);
 
         // publica ângulos com mutex 
