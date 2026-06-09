@@ -1,7 +1,7 @@
 #ifndef BUFFER_CIRC_H
 #define BUFFER_CIRC_H
 
-#define CIRCBUFFSIZE              5
+#define CIRCBUFFSIZE              500
 
 #define SEM_MENSAGEM_REPETIDA     0
 #define MENSAGEM_REPETIDA         1
