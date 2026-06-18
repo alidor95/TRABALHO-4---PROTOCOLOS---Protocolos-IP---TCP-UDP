@@ -1,6 +1,4 @@
-/* seguindo a ideia de aportuguesa as coisas
-para criar a rede e o grafico teria que olhar as funções aqui e traduzir
-*/
+
 
 #include "planta.h"
 
