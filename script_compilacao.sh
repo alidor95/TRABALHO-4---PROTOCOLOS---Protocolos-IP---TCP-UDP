@@ -1,2 +1,2 @@
-gcc servidor.c servidorIP.c planta.c buffer_circular.c cronometro.c grafico.c -o servidor -pthread -lSDL -lm -std=gnu89
-gcc cliente.c controle.c buffer_circular.c cronometro.c grafico.c -o cliente -pthread -lSDL -lm -DCLIENTE -std=gnu89
+gcc servidor.c servidorIP.c planta.c buffer_circular.c cronometro.c grafico.c -o servidor -pthread -lSDL -lm -std=gnu89 -lrt
+gcc cliente.c controle.c buffer_circular.c cronometro.c grafico.c -o cliente -pthread -lSDL -lm -DCLIENTE -std=gnu89 -lrt
