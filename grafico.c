@@ -154,7 +154,7 @@ void tryquit() {
 }*/
 void* grafico(void* ponteiroDados){
     Comum* dados = (Comum*)ponteiroDados;
-    Tdataholder *data = datainit(640,480,100,110,0,0,0);
+    Tdataholder *data = datainit(640,240,500,110,0,0,0);
     double valorAnguloEntrada, valorAnguloSaida, valorNivelAtual;
 
     while (!dados->iniciado) { quitevent(); SDL_Delay(100); }
