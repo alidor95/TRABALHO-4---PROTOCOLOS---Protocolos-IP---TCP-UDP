@@ -116,21 +116,22 @@ int roda_servidorIP(int porta, Comum* ponteiro_memoria_compartilhada) {
     while (1) {
         /* Receive a message from the client */
         clientlen = sizeof(client);
-        if ((received = recvfrom(sock, buffer, BUFFSIZE, 0,
+        if ((received = recvfrom(sock, buffer, BUFFSIZE - 1, 0,
                                 (struct sockaddr *) &client,
                                 &clientlen)) < 0) {
         Die("Failed to receive message");
         }
-        fprintf(stderr,
-                "Client connected: %s\n", inet_ntoa(client.sin_addr));
+
+        buffer[received] = '\0';        
+        fprintf(stderr, "Client connected: %s\n", inet_ntoa(client.sin_addr));
         /* Send the message back to client */
 
         processa_mensagem(buffer, resposta);
         
-        if (sendto(sock, resposta, sizeof(resposta), 0,
+        if (sendto(sock, resposta, strlen(resposta), 0,
                 (struct sockaddr *) &client,
-                sizeof(client)) == 0) {
-        Die("Mismatch in number of echo'd bytes");
+                sizeof(client)) < 0) {
+        Die("Falha ao achar a resposta");
         }
 
     }
