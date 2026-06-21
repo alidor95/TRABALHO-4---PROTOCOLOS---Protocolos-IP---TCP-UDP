@@ -41,6 +41,10 @@ typedef struct dataholder {
   double   OUTcurrent;
   PixelType OUTcolor;
 
+  int Lindex;
+  int INindex;
+  int OUTindex;
+
 } Tdataholder;
 
 void* grafico(void* ponteiroDados);
