@@ -84,13 +84,7 @@ void* controle(void* ponteiroDados) {
                 printf("[CTRL] Conectado! Planta Iniciada.\n");
             }
         }
-<<<<<<< HEAD
         usleep(10000); 
-=======
-        if (!start_confirmado); 
-        while (tempoDecorridoMs(&cronSetup) < 50); 
-        obterTempoAtual(&cronSetup);
->>>>>>> 00947d4aa06eabd9ff0941eee8c6d02eebdaf07
     }
     dados->iniciado = 1;
 
