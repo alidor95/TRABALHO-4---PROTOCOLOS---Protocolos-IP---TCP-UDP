@@ -32,6 +32,8 @@ static inline long limitar(long v, long minimo, long maximo) {
 void* controle(void* ponteiroDados) {
     int ultimo_delta;
     int ultima_seq = 1;
+    int ultima_seq_verificada = 0;
+    int delta = 0;
 
     Comum* dados = (Comum*)ponteiroDados;
     
@@ -51,7 +53,7 @@ void* controle(void* ponteiroDados) {
     /* Variáveis de Estado (Tradução do Gabarito) */
     int    nivelBruto       = 40; 
     long   integral         = 0L;
-    int    anguloAlvo       = 50;       /* Último set-point enviado */
+    int    anguloAtual       = 50;       /* Último set-point enviado */
     int    comandoPendente  = 0;        /* Flag de controle de fluxo de rede */
     double anguloSimulado   = 50.0;     /* Estimativa local da válvula */
     double deltaPendente    = 0.0;      /* Delta acumulado não executado */
@@ -84,12 +86,13 @@ void* controle(void* ponteiroDados) {
                 printf("[CTRL] Conectado! Planta Iniciada.\n");
             }
         }
-        usleep(10000); 
+        usleep(500000); 
     }
     dados->iniciado = 1;
 
+    usleep(500000);
     /* Define a saída inicial do tanque */
-    sprintf(bufferRede, "SetMax#100!"); 
+    // sprintf(bufferRede, "SetMax#100!"); 
     sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
 
     Cronometro marcadorTempo;
@@ -124,32 +127,36 @@ void* controle(void* ponteiroDados) {
                     nivelBruto = val2; 
                 }
             } else if (sscanf(bufferRecebido, "%10[^#!]#%d!", cmdString, &val1) == 2) {
-                if ((strcmp(cmdString, "Open") == 0 || strcmp(cmdString, "Close") == 0) && val1 == ultima_seq) {
+                if ((strcmp(cmdString, "Open") == 0 || strcmp(cmdString, "Close") == 0) && val1 == ultima_seq && ultima_seq > ultima_seq_verificada) {
+                    deltaPendente += (double)ultimo_delta;
+                    anguloAtual += (double) ultimo_delta;
+
+                    // printf("[CONF] seq=%d  anguloAtual=%d  delta=%d\n", val1, anguloAtual, ultimo_delta);
+                    ultima_seq_verificada = val1;
                     comandoPendente = 0; /* ACK Recebido! Libera o fluxo para novos comandos */
+                    ultimo_delta = 0;
                 }
             }
         }
 
         /* 3. ENVIO CONTROLADO POR FLUXO (Flag comandoPendente) */
-        if (comando != anguloAlvo && !comandoPendente) {
-            int delta = comando - anguloAlvo;
+        if (comando != anguloAtual && !comandoPendente) {
+            delta = comando - anguloAtual;
 
-            if (delta != 0){
-                if (delta > 0){
-                    sprintf(bufferRede, "OpenValve#%d#%d!", sequencia, abs(delta));
-                } else if (delta < 0){
-                    sprintf(bufferRede, "CloseValve#%d#%d!", sequencia, abs(delta));
-                }
-                ultimo_delta = delta;
-                ultima_seq = sequencia;
-
-                sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
-                
-                deltaPendente += (double)delta;
-                anguloAlvo = comando;
-                comandoPendente = 1; /* Trava novos envios até receber o ACK */
-                sequencia++;
+            if (delta > 0){
+                sprintf(bufferRede, "OpenValve#%d#%d!", sequencia, abs(delta));
+            } else if (delta < 0){
+                sprintf(bufferRede, "CloseValve#%d#%d!", sequencia, abs(delta));
             }
+            ultimo_delta = delta;
+            ultima_seq = sequencia;
+
+            sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
+                
+            // printf("[Env] seq=%d  anguloAtual=%d  delta=%d\n", sequencia, anguloAtual, delta);
+            comandoPendente = 1; /* Trava novos envios até receber o ACK */
+            sequencia++;
+        
         }else if (comandoPendente){
             // Reenvia o ultimo comando caso não tenha recebido a flag de comandoPendente
             if (ultimo_delta > 0){                
@@ -159,6 +166,7 @@ void* controle(void* ponteiroDados) {
             }
             sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
         }
+        
 
         /* 4. SOLICITAÇÃO PERIÓDICA DE NÍVEL */
         sprintf(bufferRede, "GetLevel#%d!", sequencia);
