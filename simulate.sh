@@ -2,7 +2,7 @@
 
 # Define a porta: usa o primeiro parâmetro ($1) se existir, 
 # caso contrário, usa 11000 como padrão.
-PORTA=${1:-11000}
+PORTA=${1:-11500}
 
 sudo ./simulador_rede_tc.sh stop
 sleep 2

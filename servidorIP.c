@@ -123,7 +123,7 @@ int roda_servidorIP(int porta, Comum* ponteiro_memoria_compartilhada) {
         }
 
         buffer[received] = '\0';        
-        fprintf(stderr, "Client connected: %s\n", inet_ntoa(client.sin_addr));
+        // fprintf(stderr, "Client connected: %s\n", inet_ntoa(client.sin_addr));
         /* Send the message back to client */
 
         processa_mensagem(buffer, resposta);

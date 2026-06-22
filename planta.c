@@ -118,7 +118,7 @@ void* planta(void* ponteiroDados)
 
         // processa todas as mensagens da fila 
         while ((novas_mensagens(filaEntradaPlanta)) != 0) {
-            printf("nova msg - %ld\n", tempoDecorridoCicloMs);
+            // printf("nova msg - %ld\n", tempoDecorridoCicloMs);
             Mensagem mensagemRecebida = le_mensagem(filaEntradaPlanta);
             if (mensagemRecebida.comando == INICIAR) {
                 // reinicia toda a simulação 
@@ -140,12 +140,12 @@ void* planta(void* ponteiroDados)
                 switch (mensagemRecebida.comando) {
                 case ABRIR_VALVULA:
                     //acumula delta positivo — abre válvula 
-                    printf("abrir - %d\n", mensagemRecebida.valor);
+                    // printf("abrir - %d\n", mensagemRecebida.valor);
                     deltaPendente += mensagemRecebida.valor;
                     break;
                 case FECHAR_VALVULA:
                     // acumula delta negativo — fecha válvula 
-                    printf("fechar - %d\n", mensagemRecebida.valor);
+                    // printf("fechar - %d\n", mensagemRecebida.valor);
                     deltaPendente -= mensagemRecebida.valor;
                     break;
                 case DEFINIR_MAX:

@@ -30,6 +30,9 @@ static inline long limitar(long v, long minimo, long maximo) {
 }
 
 void* controle(void* ponteiroDados) {
+    int ultimo_delta;
+    int ultima_seq;
+
     Comum* dados = (Comum*)ponteiroDados;
     
     /* Configuração do Socket UDP */
@@ -76,12 +79,12 @@ void* controle(void* ponteiroDados) {
                 printf("[CTRL] Conectado! Planta Iniciada.\n");
             }
         }
-        if (!start_confirmado) usleep(100000); 
+        usleep(10000); 
     }
     dados->iniciado = 1;
 
     /* Define a saída inicial do tanque */
-    sprintf(bufferRede, "SetMax#50!"); 
+    sprintf(bufferRede, "SetMax#100!"); 
     sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
 
     Cronometro marcadorTempo;
@@ -105,24 +108,6 @@ void* controle(void* ponteiroDados) {
 
         int comando = (int)saidaSaturada;
 
-        /* 3. ENVIO CONTROLADO POR FLUXO (Flag comandoPendente) */
-        if (comando != anguloAlvo && !comandoPendente) {
-            int delta = comando - anguloAlvo;
-            if (delta > 0) sprintf(bufferRede, "OpenValve#%d#%d!", sequencia, abs(delta));
-            else sprintf(bufferRede, "CloseValve#%d#%d!", sequencia, abs(delta));
-            
-            sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
-            
-            deltaPendente += (double)delta;
-            anguloAlvo = comando;
-            comandoPendente = 1; /* Trava novos envios até receber o ACK */
-            sequencia++;
-        }
-
-        /* 4. SOLICITAÇÃO PERIÓDICA DE NÍVEL */
-        sprintf(bufferRede, "GetLevel#%d!", sequencia++);
-        sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
-
         /* 5. PROCESSAMENTO DE ACKS (Equivalente ao Loop BCdequeue) */
         int lidos;
         while ((lidos = recvfrom(sock, bufferRecebido, 255, 0, NULL, NULL)) > 0) {
@@ -134,11 +119,46 @@ void* controle(void* ponteiroDados) {
                     nivelBruto = val2; 
                 }
             } else if (sscanf(bufferRecebido, "%10[^#!]#%d!", cmdString, &val1) == 2) {
-                if (strcmp(cmdString, "Open") == 0 || strcmp(cmdString, "Close") == 0) {
+                if ((strcmp(cmdString, "Open") == 0 || strcmp(cmdString, "Close") == 0) && val1 == ultima_seq) {
                     comandoPendente = 0; /* ACK Recebido! Libera o fluxo para novos comandos */
                 }
             }
         }
+
+        /* 3. ENVIO CONTROLADO POR FLUXO (Flag comandoPendente) */
+        if (comando != anguloAlvo && !comandoPendente) {
+            int delta = comando - anguloAlvo;
+
+            if (delta != 0){
+                if (delta > 0) sprintf(bufferRede, "OpenValve#%d#%d!", sequencia, abs(delta));
+                else if (delta < 0){
+                    sprintf(bufferRede, "CloseValve#%d#%d!", sequencia, abs(delta));
+                }
+                ultimo_delta = delta;
+                ultima_seq = sequencia;
+
+                sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
+                
+                deltaPendente += (double)delta;
+                anguloAlvo = comando;
+                comandoPendente = 1; /* Trava novos envios até receber o ACK */
+                sequencia++;
+            }
+        }else {
+            // Reenvia o ultimo comando caso não tenha recebido a flag de comandoPendente
+            if (ultimo_delta > 0) sprintf(bufferRede, "OpenValve#%d#%d!", ultima_seq, abs(ultimo_delta));
+            else if (ultimo_delta < 0){
+                sprintf(bufferRede, "CloseValve#%d#%d!", ultima_seq, abs(ultimo_delta));
+            }
+            sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
+        }
+
+        /* 4. SOLICITAÇÃO PERIÓDICA DE NÍVEL */
+        sprintf(bufferRede, "GetLevel#%d!", sequencia);
+        sequencia++;
+        sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
+
+        
 
         /* 6. ESTIMATIVA LOCAL DA VÁLVULA PARA A INTERFACE */
         double passo = TAXA_MOV_VALVULA * PERIODO_MS;
