@@ -55,16 +55,21 @@ void* controle(void* ponteiroDados) {
     int    comandoPendente  = 0;        /* Flag de controle de fluxo de rede */
     double anguloSimulado   = 50.0;     /* Estimativa local da válvula */
     double deltaPendente    = 0.0;      /* Delta acumulado não executado */
-    int    sequencia        = 1;
+    long int    sequencia        = 1;
     
     char bufferRede[255];
     char bufferRecebido[255];
     int  start_confirmado = 0;
     
+    Cronometro cronSetup;
+    iniciar_cronometro(&cronSetup);
+
     /* 1. HANDSHAKE CONFIÁVEL (Garante Envio) */
     sprintf(bufferRede, "CommTest!");
     sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
-    usleep(50000); 
+    
+    while (tempoDecorridoMs(&cronSetup) < 50); 
+    obterTempoAtual(&cronSetup);
 
     while (!start_confirmado) {
         sprintf(bufferRede, "Start!");
@@ -79,7 +84,13 @@ void* controle(void* ponteiroDados) {
                 printf("[CTRL] Conectado! Planta Iniciada.\n");
             }
         }
+<<<<<<< HEAD
         usleep(10000); 
+=======
+        if (!start_confirmado); 
+        while (tempoDecorridoMs(&cronSetup) < 50); 
+        obterTempoAtual(&cronSetup);
+>>>>>>> 00947d4aa06eabd9ff0941eee8c6d02eebdaf07
     }
     dados->iniciado = 1;
 
