@@ -31,7 +31,7 @@ static inline long limitar(long v, long minimo, long maximo) {
 
 void* controle(void* ponteiroDados) {
     int ultimo_delta;
-    int ultima_seq;
+    int ultima_seq = 1;
 
     Comum* dados = (Comum*)ponteiroDados;
     
@@ -135,8 +135,9 @@ void* controle(void* ponteiroDados) {
             int delta = comando - anguloAlvo;
 
             if (delta != 0){
-                if (delta > 0) sprintf(bufferRede, "OpenValve#%d#%d!", sequencia, abs(delta));
-                else if (delta < 0){
+                if (delta > 0){
+                    sprintf(bufferRede, "OpenValve#%d#%d!", sequencia, abs(delta));
+                } else if (delta < 0){
                     sprintf(bufferRede, "CloseValve#%d#%d!", sequencia, abs(delta));
                 }
                 ultimo_delta = delta;
@@ -149,10 +150,11 @@ void* controle(void* ponteiroDados) {
                 comandoPendente = 1; /* Trava novos envios até receber o ACK */
                 sequencia++;
             }
-        }else {
+        }else if (comandoPendente){
             // Reenvia o ultimo comando caso não tenha recebido a flag de comandoPendente
-            if (ultimo_delta > 0) sprintf(bufferRede, "OpenValve#%d#%d!", ultima_seq, abs(ultimo_delta));
-            else if (ultimo_delta < 0){
+            if (ultimo_delta > 0){                
+                sprintf(bufferRede, "OpenValve#%d#%d!", ultima_seq, abs(ultimo_delta));
+            } else if (ultimo_delta < 0){
                 sprintf(bufferRede, "CloseValve#%d#%d!", ultima_seq, abs(ultimo_delta));
             }
             sendto(sock, bufferRede, strlen(bufferRede), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
